@@ -42,7 +42,7 @@
         End Set
     End Property
 
-    Public Property SMonoSKU As String
+    Public Property SReferenciaAX As String
         Get
             Return _sMonoSKU
         End Get

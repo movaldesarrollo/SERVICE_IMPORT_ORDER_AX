@@ -85,7 +85,7 @@ Public Class ImportAXOrderService
                             With ol
                                 .sIdClient = textArray(0)
                                 .SClient = textArray(1)
-                                .SMonoSKU = textArray(2)
+                                .SReferenciaAX = textArray(2)
                                 .SOrderAX = textArray(3)
                                 .OrderAXDate = textArray(4)
                                 .SOrderLineAx = textArray(5)
@@ -93,7 +93,7 @@ Public Class ImportAXOrderService
                                 .DesiredDate = textArray(7)
                                 .RequestedDate = textArray(8)
                                 .IQuantity = textArray(9)
-                                If textArray(10) = 0 Then
+                                If textArray(10) = 0 Or textArray(10) = "" Then
                                     .BClientBlock = 1
                                 Else
                                     .BClientBlock = 2
@@ -182,6 +182,7 @@ Public Class ImportAXOrderService
     End Sub
     'Register new clients.
     Function registerClients(ByVal ordersLinesList As List(Of orderLine)) As String
+        registerClients = ""
         Try
             For Each ol In ordersLinesList
                 With ol
@@ -189,13 +190,22 @@ Public Class ImportAXOrderService
                         If funcOl.CreateClient(.SClient, .sIdClient) Then
                             logText("Nuevo cliente " & .SClient & " registrado, identificador de AX " & .sIdClient & " .")
                             logService("Nuevo cliente " & .SClient & " registrado, identificador de AX " & .sIdClient & " ." & vbCrLf)
+                        Else
+                            logText("Error al crear  el cliente " & .SClient & " registrado, identificador de AX " & .sIdClient & " .")
+                            logService("Error al crear  el cliente " & .SClient & " registrado, identificador de AX " & .sIdClient & " ." & vbCrLf)
+                        End If
+                    Else
+                        If Not funcOl.UpdateClient(.sIdClient, .BClientBlock, .SClient) Then
+                            logText("Error al  actualizar el cliente " & .SClient & " registrado, identificador de AX " & .sIdClient & " .")
+                            logService("Error al  actualizar el cliente " & .SClient & " registrado, identificador de AX " & .sIdClient & " ." & vbCrLf)
                         End If
                     End If
                 End With
             Next
-            Return ""
         Catch ex As Exception
-            Return ex.Message
+            registerClients = ex.Message
+            logText("Error al registrar los clientes.")
+            logService("Error al registrar los clientes." & vbCrLf)
         End Try
     End Function
     'Register lines
@@ -203,21 +213,23 @@ Public Class ImportAXOrderService
         registerLines = True
         For Each ol In ordersLinesList
             Try
-                ol.IIdArticles = funcOl.testArticles(ol.SMonoSKU, ol.sIdClient)
+                ol.IIdArticles = funcOl.testArticles(ol.SReferenciaAX, ol.sIdClient)
                 If ol.IIdArticles = 0 Then
                     withErrors = True
-                    logService("No se ha encontrado el articulo " & ol.SMonoSKU & " en la base de datos. No se importará la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & vbCrLf)
-                    logText("No se ha encontrado el articulo " & ol.SMonoSKU & " en la base de datos. No se importará la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX)
+                    funcOl.insertMissingArticles(ol.SReferenciaAX, ol.SOrderAX, ol.SOrderLineAx)
+                    logService("*** Error, no se ha encontrado el articulo " & ol.SReferenciaAX & " en la base de datos. No se importará la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & vbCrLf)
+                    logText("*** Error, no se ha encontrado el articulo " & ol.SReferenciaAX & " en la base de datos. No se importará la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX)
                 Else
                     'Compare lines
                     Dim sCompareLines As String = funcOl.compareLines(ol)
                     If sCompareLines = "" Then
-                        If funcOl.CreateOrderLine(ol) Then
+                        Dim resultCreate As String = funcOl.CreateOrderLine(ol)
+                        If resultCreate = "" Then
                             logService("Se ha creado correctamente la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & "." & vbCrLf)
                             logText("Se ha creado correctamente la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & ".")
                         Else
                             withErrors = True
-                            logService("*** Error al crear la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & "." & vbCrLf)
+                            logService("*** Error al crear la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & "." & vbCrLf & resultCreate & vbCrLf)
                             logText("*** Error al crear la línea " & ol.SOrderLineAx & " del pedido " & ol.SOrderAX & ".")
                         End If
                     Else

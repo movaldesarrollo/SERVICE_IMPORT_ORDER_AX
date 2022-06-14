@@ -151,6 +151,7 @@ select @id_articles
         End Try
         con.Close()
     End Function
+
     'Compare register
     Public Function compareLines(ByVal ol As orderLine) As String
         compareLines = ""
@@ -212,7 +213,7 @@ select @id_articles
             End If
             If result = False Then
                 ol.IId = olA.IId
-                If olA.IId_states = 2 Then
+                If olA.IId_states = 2 And olA.QuantityProduced = 0 Then
                     If updateLine(diferents, ol.IId) Then
                         Return "Se ha actualizado la línea " & olA.SOrderLineAx & " del pedido " & olA.SOrderAX & "."
                     Else
@@ -379,7 +380,8 @@ notes,
 id_orders_lines_states,
 id,
 id_articles,
-is_deleted
+is_deleted,
+quantity
 from orders_lines ol where order_number ='" & order & "' and order_line_number ='" & line & "'"
         Dim ola As New orderLine
         Try
@@ -405,6 +407,7 @@ from orders_lines ol where order_number ='" & order & "' and order_line_number =
                         .IId = row(13)
                         .IIdArticles = row(14)
                         .BIsDeleted = row(15)
+                        .QuantityProduced = If(row(16) Is DBNull.Value, 0, row(16))
                     End With
                 Next
             End If

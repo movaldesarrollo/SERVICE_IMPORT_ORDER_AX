@@ -12,6 +12,7 @@
     Dim _sOrderLineAx As String
     Dim _OrderLineAXDate As DateTime
     Dim _iQuantity As Integer
+    Dim _quantityProduced As Integer
     Dim _bClientBlock As Integer
     Dim _sNotes As String
     Dim _RequestedDate As DateTime
@@ -165,6 +166,15 @@
         End Get
         Set(value As Integer)
             _bIsDeleted = value
+        End Set
+    End Property
+
+    Public Property QuantityProduced As Integer
+        Get
+            Return _quantityProduced
+        End Get
+        Set(value As Integer)
+            _quantityProduced = value
         End Set
     End Property
 
